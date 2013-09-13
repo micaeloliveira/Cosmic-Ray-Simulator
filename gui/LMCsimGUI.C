@@ -1,0 +1,566 @@
+//-----------------------------------------------------------
+//
+//  GUI
+//  Authors: L. Batalha, M. Oliveira
+//  August 2012
+//
+//-----------------------------------------------------------
+
+
+
+#include <TApplication.h>
+#include <TGClient.h>
+#include <TGSlider.h>
+#include <TGLabel.h>
+#include <TGDoubleSlider.h>
+#include <TCanvas.h>
+#include <TF1.h>
+#include <TGFont.h>
+#include <TGFontDialog.h>
+#include <TRandom.h>
+#include <TGButton.h>
+#include <TRootEmbeddedCanvas.h>
+
+#include <TSystem.h>
+#include <TROOT.h>
+#include <TView.h>
+#include <TGButtonGroup.h>
+#include <TString.h>
+#include <TVirtualGeoTrack.h>
+#include <TGeoTrack.h>
+
+//MY
+#include "LMCsimGUI.h"
+#include "LMCparticle.h"
+#include "LMCpropagator.h"
+#include "LMCgeomN.h"
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//LMCsimGUI::LMCsimGUI() {;}
+
+LMCsimGUI::LMCsimGUI(const TGWindow *p,UInt_t w,UInt_t h)  {
+  
+  
+  // Create a main frame
+  fMain = new TGMainFrame(p,w,h);
+  
+  TGHorizontalFrame *hoframe = new TGHorizontalFrame(fMain,800,800);
+  
+  TGCompositeFrame *cframe1 = new TGCompositeFrame(hoframe,200,600, kVerticalFrame | kFixedWidth | kFixedHeight);
+  
+  // Definition of Fonts used on LRCGuiClient
+  FontStruct_t ucourier10font = gClient->GetFontByName("-*-courier-bold-r-*-*-10-*-*-*-*-*-*");
+  FontStruct_t ucourier12font = gClient->GetFontByName("-*-courier-bold-r-*-*-12-*-*-*-*-*-*");
+  FontStruct_t ucourier14font = gClient->GetFontByName("-*-courier-bold-r-*-*-14-*-*-*-*-*-*");
+  FontStruct_t uhelvetica12font = gClient->GetFontByName("-*-helvetica-bold-r-*-*-12-*-*-*-*-*-*");
+  FontStruct_t uhelvetica14font = gClient->GetFontByName("-*-helvetica-bold-r-*-*-14-*-*-*-*-*-*");
+  FontStruct_t uhelvetica18font = gClient->GetFontByName("-*-helvetica-bold-r-*-*-18-*-*-*-*-*-*");
+  FontStruct_t utimes14font = gClient->GetFontByName("-*-times-bold-r-*-*-14-*-*-*-*-*-*");
+  FontStruct_t utimes12font = gClient->GetFontByName("-*-times-bold-r-*-*-12-*-*-*-*-*-*");
+  FontStruct_t utimes10font = gClient->GetFontByName("-*-times-bold-r-*-*-10-*-*-*-*-*-*");
+  
+  
+  //Create Labels
+  //lSlider1 = new TGLabel
+  
+  
+  TGRadioButton *fRadiob[2]; 
+  TGButtonGroup *fButtonGroup = new TGButtonGroup(cframe1, "Geometry");
+  fButtonGroup->SetTextFont(uhelvetica12font);
+
+  fRadiob[0] = new TGRadioButton(fButtonGroup, new TGHotString("Telescope"));
+  fRadiob[0]->Connect("Clicked()","LMCsimGUI",this,"DrawTelescope()");
+  
+  fRadiob[1] = new TGRadioButton(fButtonGroup, new TGHotString("Water Tank"));
+  fRadiob[1]->Connect("Clicked()","LMCsimGUI",this,"DrawTank()");
+  
+  fButtonGroup->Show();
+  cframe1->AddFrame(fButtonGroup, new TGLayoutHints(kLHintsExpandX, 10, 10, 20, 10));
+  
+  
+  TGRadioButton *fView[3]; 
+  TGButtonGroup *groupview = new TGButtonGroup(cframe1, "View");
+  groupview->SetTextFont(uhelvetica12font);
+        
+  fView[0] = new TGRadioButton (groupview, new TGHotString("Side"));
+  fView[0]->Connect("Clicked()","LMCsimGUI",this,"View1()");
+  
+  fView[1] = new TGRadioButton (groupview, new TGHotString("Top"));
+  fView[1]->Connect("Clicked()","LMCsimGUI",this,"View2()");
+  
+  fView[2] = new TGRadioButton (groupview, new TGHotString("Front"));
+  fView[2]->Connect("Clicked()","LMCsimGUI",this,"View3()");
+  //groupview->AddFrame(fView[2], new TGLayoutHints(kLHintsExpandX,5,5,1,1));
+  
+  groupview->Show();
+  cframe1->AddFrame(groupview, new TGLayoutHints(kLHintsExpandX, 10, 10, 15, 10));
+
+  TGButtonGroup *groupviewRot = new TGButtonGroup(cframe1, "Rotate and Zoom");
+  groupviewRot->SetTextFont(uhelvetica12font);
+  
+  UInt_t SliderViewID=9;
+  fSlider1 = new TGHSlider(groupviewRot, 360, kSlider2 | kScaleBoth, SliderViewID);
+  fSlider1->SetRange(-180,180);
+  fSlider1->SetPosition(5);
+  //fSlider1->Connect("Released()","LMCsimGUI",this,"SlideView()");
+  fSlider1->Connect("PositionChanged(Int_t)","LMCsimGUI",this,"SlideView()");
+  groupviewRot->AddFrame(fSlider1, new TGLayoutHints(kLHintsExpandX, 5,5,5,1));
+  
+  TGTextButton *rotateA = new TGTextButton(groupviewRot,"&Auto-Rotate");
+  rotateA->Connect("Clicked()","LMCsimGUI",this,"Rotate()");
+  groupviewRot->AddFrame(rotateA, new TGLayoutHints(kLHintsExpandX,5,5,3,3));
+  
+  
+  TGCompositeFrame *subhorF = new TGCompositeFrame(groupviewRot, 200, 200, kHorizontalFrame);
+  
+  TGTextButton *fZoom[2]; 
+  fZoom[0] = new TGTextButton (subhorF, new TGHotString("In (+)"));
+  fZoom[0]->Connect("Clicked()","LMCsimGUI",this,"ZoomIn()");
+  subhorF->AddFrame(fZoom[0],new TGLayoutHints(kLHintsExpandX, 2,2,2,2));
+  //groupview->AddFrame(fZoom[0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+  
+  fZoom[1] = new TGTextButton (subhorF, new TGHotString("Out (-)"));
+  fZoom[1]->Connect("Clicked()","LMCsimGUI",this,"ZoomOut()");
+  subhorF->AddFrame(fZoom[1],new TGLayoutHints(kLHintsExpandX, 2,2,2,2));
+  //groupZoom->AddFrame(fZoom[1], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+
+  //TGTextButton *Zoom = new TGTextButton(cframe1,"Zoom");
+  //Zoom->Connect("Clicked()","LMCsimGUI",this,"Zoom()");
+  //cframe1->AddFrame(Zoom, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+  
+  
+  groupviewRot->AddFrame(subhorF, new TGLayoutHints(kLHintsExpandX, 2,2,2,2));
+
+  groupviewRot->Show();
+  cframe1->AddFrame(groupviewRot,  new TGLayoutHints(kLHintsExpandX, 10, 10, 15, 10));
+  
+  
+  
+  ULong_t red, yellow, green;
+  gClient->GetColorByName("yellow", yellow);
+  gClient->GetColorByName("red", red);
+  gClient->GetColorByName("green", green);
+  
+  TGCompositeFrame *subF = new TGCompositeFrame(cframe1, 200, 200, kVerticalFrame);
+  
+  TGTextButton *run = new TGTextButton(subF,"Run");
+  run->SetFont(uhelvetica12font);
+  run->Connect("Clicked()","LMCsimGUI",this,"Run()");
+  run->ChangeBackground(green);
+  subF->AddFrame(run, new TGLayoutHints(kLHintsExpandX,5,5,3,4));
+
+  
+  TGTextButton *exit = new TGTextButton(subF,"&Exit","gApplication->Terminate(0)");
+  exit->SetFont(uhelvetica12font);
+  exit->ChangeBackground(yellow);
+  subF->AddFrame(exit, new TGLayoutHints(kLHintsExpandX,5,5,3,4));
+  
+  cframe1->AddFrame(subF, new TGLayoutHints(kLHintsExpandX | kLHintsBottom, 10, 10, 15, 10));
+  
+  
+  hoframe->AddFrame(cframe1);
+      
+  fEcanvas = new TRootEmbeddedCanvas("Ecanvas",hoframe,600,600);
+  hoframe->AddFrame(fEcanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10, 15, 15, 15));  
+  
+  fMain->AddFrame(hoframe, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));  
+  
+  
+  // Set a name to the main frame
+  fMain->SetWindowName("LabRC");
+  // Map all subwindows of main frame
+  fMain->MapSubwindows();
+  // Initialize the layout algorithm
+  fMain->Resize(fMain->GetDefaultSize());
+  // Map main frame
+  fMain->MapWindow();
+  
+
+  }
+
+
+
+
+
+    
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+LMCsimGUI::~LMCsimGUI() {
+
+  // Clean up used widgets: frames, buttons, layouthints
+  fMain->Cleanup();
+  delete fMain;
+  
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+void LMCsimGUI::DrawTelescope() {
+ 
+  LMCgeomN *g = new LMCgeomN("Telescope");
+  
+  g->Draw();
+  TCanvas *fCanvas = fEcanvas->GetCanvas();
+  fCanvas->cd();
+  fCanvas->Update();
+  
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+void LMCsimGUI::DrawTank() {
+  
+  LMCgeomN *g = new LMCgeomN("Tank");
+  
+  g->Draw();
+  TCanvas *fCanvas = fEcanvas->GetCanvas();
+  fCanvas->cd();
+  fCanvas->Update();
+  
+
+}
+
+
+
+
+Bool_t vrotate = kFALSE;
+void LMCsimGUI::Rotate() {
+  
+  vrotate = !vrotate;
+   if (!vrotate) {
+      gROOT->SetInterrupt(kTRUE);
+      return;
+   }   
+   if (!gPad) return;
+   TView *view = gPad->GetView();
+   if (!view) return;
+   if (!gGeoManager) return;
+   TVirtualGeoPainter *painter = gGeoManager->GetGeomPainter();
+   if (!painter) return;
+   Double_t longit = view->GetLongitude();
+   Double_t lat = view->GetLatitude();
+   Double_t psi = view->GetPsi();
+   Double_t dphi = 0.8;
+   Int_t i,irep;
+   TProcessEventTimer *timer = new TProcessEventTimer(1);
+   gROOT->SetInterrupt(kFALSE);
+   while (vrotate) {
+      if (timer->ProcessEvents()) break;
+      if (gROOT->IsInterrupted()) break;
+      longit += dphi;
+      if (longit>360) longit -= 360.;
+      if (!gPad) {
+         vrotate = kFALSE;
+         return;
+      } 
+      view = gPad->GetView();  
+      if (!view) {
+	vrotate = kFALSE;
+         return;
+      } 
+      view->SetView(longit,view->GetLatitude(),view->GetPsi(),irep);
+      gPad->Modified();
+      gPad->Update();
+   } 
+   delete timer;     
+}
+
+
+void LMCsimGUI::SlideView(){
+  
+  Double_t pos =  fSlider1->GetPosition();
+  
+  TView *view = gPad->GetView();
+  
+  if (!view) return;
+  if (!gGeoManager) return;
+ 
+  TVirtualGeoPainter *painter = gGeoManager->GetGeomPainter();
+  if (!painter) return;
+  Double_t longit = view->GetLongitude();
+  Double_t lat = view->GetLatitude();
+  Double_t psi = view->GetPsi();
+  Int_t irep;
+  
+  gROOT->SetInterrupt(kFALSE);
+  view->SetView(pos,lat,psi,irep);
+  
+  gPad->Modified();
+  gPad->Update();
+  
+}
+
+
+
+void LMCsimGUI::View1() {
+   if (!gPad) return;
+   
+   TView *view = gPad->GetView();
+   
+   if (!view) return;
+   if (!gGeoManager) return;
+   
+   TVirtualGeoPainter *painter = gGeoManager->GetGeomPainter();
+   if (!painter) return;
+   Double_t longit = view->GetLongitude();
+   Double_t lat = view->GetLatitude();
+   Double_t psi = view->GetPsi();
+   Int_t i,irep;
+   
+   gROOT->SetInterrupt(kFALSE);
+   
+   view->SetView(270.,90.,0.,irep);
+   gPad->Modified();
+   gPad->Update();
+  
+  
+}
+
+
+void LMCsimGUI::View2() {
+   if (!gPad) return;
+   
+   TView *view = gPad->GetView();
+   
+   if (!view) return;
+   if (!gGeoManager) return;
+   
+   TVirtualGeoPainter *painter = gGeoManager->GetGeomPainter();
+   if (!painter) return;
+   Double_t longit = view->GetLongitude();
+   Double_t lat = view->GetLatitude();
+   Double_t psi = view->GetPsi();
+   Int_t i,irep;
+   
+   gROOT->SetInterrupt(kFALSE);
+   
+   view->SetView(0.,180.,0.,irep);
+   gPad->Modified();
+   gPad->Update();
+  
+  
+}
+
+
+
+void LMCsimGUI::View3() {
+   if (!gPad) return;
+   
+   TView *view = gPad->GetView();
+   
+   if (!view) return;
+   if (!gGeoManager) return;
+   
+   TVirtualGeoPainter *painter = gGeoManager->GetGeomPainter();
+   if (!painter) return;
+   Double_t longit = view->GetLongitude();
+   Double_t lat = view->GetLatitude();
+   Double_t psi = view->GetPsi();
+   Int_t i,irep;
+   
+   gROOT->SetInterrupt(kFALSE);
+   
+   view->SetView(0.,90.,0.,irep);
+   gPad->Modified();
+   gPad->Update();
+  
+  
+}
+
+
+
+void LMCsimGUI::ZoomIn() {
+  if (!gPad) return;
+   
+  TView *view = gPad->GetView();
+   
+  if (!view) return;
+  if (!gGeoManager) return;
+   
+  TVirtualGeoPainter *painter = gGeoManager->GetGeomPainter();
+  if (!painter) return;
+     
+  gROOT->SetInterrupt(kFALSE);
+   
+  view->ZoomIn();
+  gPad->Modified();
+  gPad->Update();
+  
+  
+}
+
+
+void LMCsimGUI::ZoomOut() {
+  if (!gPad) return;
+  
+  TView *view = gPad->GetView();
+  
+  if (!view) return;
+  if (!gGeoManager) return;
+   
+  TVirtualGeoPainter *painter = gGeoManager->GetGeomPainter();
+  if (!painter) return;
+  
+  gROOT->SetInterrupt(kFALSE);
+   
+  view->ZoomOut();
+  gPad->Modified();
+  gPad->Update();
+  
+  
+}
+
+
+
+
+void LMCsimGUI::Run() {
+  
+  double vtx[3] = {0.,0.,50};
+  double mom[3] = {1.,1.,1.};
+  int PID = 22;
+  
+   
+  //define geometry
+  LMCgeomN *g = new LMCgeomN("Telescope");
+  //LMCgeomN *g = new LMCgeomN("Tank");
+  //LMCmaterials *mat = g->GetLMCmaterials();
+  
+  //create propagator and 
+  LMCpropagator *prop = new LMCpropagator(g->GetGeoManager());
+  //LMCpropMuon *prop = new LMCpropMuon (g->GetGeoManager());
+  
+  //stack
+  //LMCstack *stack = LMCstack::GetInstance();
+  
+  //set particle in propagator
+  TParticle *particle = new TParticle(PID,0,0,0,0,0,mom[0],mom[1],mom[2],0.,vtx[0],vtx[1],vtx[2],0.);
+  TVector3 vaux(mom[0],mom[1],mom[2]);
+  if(PID==22)particle->SetPolarisation(vaux.Orthogonal());
+  //stack->AddParticle(particle);
+  
+  //activate phys processes (node, phys proc)
+  vector<string> vint;
+  vint.assign  (1,"SCI");
+  prop->SetPhysProcesses("Scintillator_1",vint);
+  prop->SetPhysProcesses("Scintillator_2",vint);
+  prop->SetPhysProcesses("Scintillator_3",vint);
+  
+  vint.push_back("dEdx");
+  prop->SetPhysProcesses("Scintillator_1",vint);
+  prop->SetPhysProcesses("Scintillator_2",vint);
+  prop->SetPhysProcesses("Scintillator_3",vint);
+  
+  
+  vint.assign (1,"CER");
+  prop->SetPhysProcesses("LightGuideTrap_1",vint);
+  prop->SetPhysProcesses("LightGuideTrap_2",vint);
+  prop->SetPhysProcesses("LightGuideTrap_3",vint);
+  prop->SetPhysProcesses("LightGuideRod_1",vint);
+  prop->SetPhysProcesses("LightGuideRod_2",vint);
+  prop->SetPhysProcesses("LightGuideRod_3",vint);
+  prop->SetPhysProcesses("PMTWindowTank_1",vint);
+  prop->SetPhysProcesses("PMTWindowTank_2",vint);  
+  prop->SetPhysProcesses("PMTWindowTank_3",vint);
+  prop->SetPhysProcesses("WATERvol_1",vint); 
+  
+  vint.push_back("dEdx");
+  prop->SetPhysProcesses("LightGuideTrap_1",vint);
+  prop->SetPhysProcesses("LightGuideTrap_2",vint);
+  prop->SetPhysProcesses("LightGuideTrap_3",vint);
+  prop->SetPhysProcesses("LightGuideRod_1",vint);
+  prop->SetPhysProcesses("LightGuideRod_2",vint);
+  prop->SetPhysProcesses("LightGuideRod_3",vint);
+  prop->SetPhysProcesses("PMTWindowTank_1",vint);
+  prop->SetPhysProcesses("PMTWindowTank_2",vint);  
+  prop->SetPhysProcesses("PMTWindowTank_3",vint);
+  prop->SetPhysProcesses("WATERvol_1",vint);
+  
+  
+  prop->DumpPhysProcesses();  
+  
+  /*
+    TGeoMaterial* Scintillator = mat->GetMaterial("Scintillator");
+    
+    LMCfunctor::Instance(); 
+    TF1 *f = LMCfunctor::GetBetheBloch();
+    f->SetParameter(0,Scintillator->GetZ());
+    f->SetParameter(1,Scintillator->GetA());
+    f->SetParameter(2,Scintillator->GetDensity());
+    f->SetParameter(3,Scintillator->GetRadLen());
+    f->SetParameter(4,particle->GetMass());
+    
+    TCanvas *c = new TCanvas ("c", "Bethe Bloch", 1000,1000);
+    c->cd();
+    f->Draw();
+    
+  */
+  
+  // cout << f->Eval(5.)<< endl ;
+  //getchar();
+
+  // Set init point on geometry
+  Double_t V[3] = {particle->Vx(), particle->Vy(), particle->Vz()};
+  Double_t D[3]   = {particle->Px()/particle->P(), particle->Py()/particle->P(), particle->Pz()/particle->P()};
+  g->GetGeoManager()->InitTrack(V,D);
+  Int_t track_index = g->GetGeoManager()->AddTrack(0,PID,particle);
+  g->GetGeoManager()->SetCurrentTrack(track_index);
+  TVirtualGeoTrack *photon = g->GetGeoManager()->GetCurrentTrack();
+
+  prop->SetParticle(particle);
+  vector<LMCstep*> vstep = prop->Propagate();
+  for(uint j=0; j<vstep.size();j++) {
+    //vstep[j]->Dump();
+    TVector3 ipoint = vstep[j]->GetInitPoint();
+    photon->AddPoint(ipoint.X(),ipoint.Y(),ipoint.Z(),0);
+  }
+
+
+
+
+  /*
+  //propagate stack particles
+  for (int i=0; i<stack->Size(); i++) {
+  TParticle *p = stack->NextParticle();
+  cout << "propagating particle id= " << p->GetPdgCode() << endl;
+  prop->SetParticle(p);
+  vector<LMCstep*> vstep = prop->Propagate();
+  for(uint j=0; j<vstep.size();j++) {
+  vector<TParticle*> vpart = vstep[j]->GetParticles();
+  for(uint i=0; i<vpart.size();i++) {
+  stack->AddParticle(vpart[i]);
+  }  
+  }
+  cout << " stack size = " <<stack->Size() <<  endl;
+  for (int n=0; n<stack->Size(); n++) {
+  cout << stack->GetEntry(n) << endl;
+  }    
+  getchar();
+  }
+   
+
+  */
+
+
+  /*LMCstep*  f = new LMCstep() ;
+  // f = v[3];
+  cout << v.size() << endl;
+  //  f->Dump();
+  */
+ 
+  g->Draw();
+  g->GetGeoManager()->DrawTracks();
+  TCanvas *fCanvas = fEcanvas->GetCanvas();
+  fCanvas->cd();
+  fCanvas->Update();
+
+
+
+
+
+
+}
+
+
+

@@ -1,0 +1,1 @@
+g++ -o testmatrix.exe testmatrix.C -I`root-config --include` `root-config --cflags --libs --glibs` -lGeom 

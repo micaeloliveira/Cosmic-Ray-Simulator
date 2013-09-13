@@ -1,0 +1,169 @@
+10
+
+dir
+107
+svn+ssh://svnuser@labrc-proton.ist.utl.pt/SOFTW/SVN/LRCsim/trunk
+svn+ssh://svnuser@labrc-proton.ist.utl.pt/SOFTW/SVN/LRCsim
+
+
+
+2012-06-16T01:42:55.819609Z
+77
+svnuser
+
+
+
+
+
+
+
+
+
+
+
+
+
+incomplete
+6523597d-1261-495f-b3b6-aeb439a3defc
+
+test
+dir
+
+phys
+dir
+
+main
+dir
+
+gui
+dir
+
+Stprop
+file
+77
+
+
+
+2012-08-23T15:20:36.000000Z
+93a85035163aecb78177b947add72097
+2012-06-16T01:42:55.819609Z
+77
+svnuser
+has-props
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+113
+
+geom
+dir
+
+DOCs
+dir
+
+LIBS
+dir
+
+00README
+file
+77
+
+
+
+2012-08-23T15:20:36.000000Z
+85ceb7f9e375874857111fbc86686c37
+2012-06-01T08:15:27.076507Z
+48
+svnuser
+has-props
+
+
+svn:special
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+13
+
+tmp
+dir
+
+track
+dir
+
+html
+dir
+
+bin
+dir
+
+Makefile
+file
+95
+
+
+
+2012-09-05T10:31:29.000000Z
+715daf0585d971efd60d7e6245809c65
+2012-08-30T10:09:21.482678Z
+94
+svnuser
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4509
+
+user
+dir
+
+OLD
+dir
+

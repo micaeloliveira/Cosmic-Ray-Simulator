@@ -1,0 +1,64 @@
+#ifndef _LMCgeomN_
+#define _LMCgeomN_
+
+/**
+ *
+ * The experimental detector setup is defined on this class, by calling the different detector
+ * elements defined (LMCscintillator, LMCcerenkovTank,...)
+ *
+ * The GeoManager is built here as well other ROOT (material, ...) initializations needed
+ * by the simulation.
+ */
+
+#include <string>
+#include <vector>
+#include <map>
+#include <utility>
+#include <iostream>
+
+#include <TGeoManager.h>
+#include <TGeoVolume.h>
+#include <TVector3.h>
+
+using namespace std;
+
+class TParticle;
+class TVector3;
+class TGeoNode;
+class TGeoManager;
+class LMCmaterials;
+
+//---------------------------------------------------------------
+
+class LMCgeomN {
+
+ public:
+  /** 
+      LMCgeomN constructor
+      \param string geometry to be built
+   */
+  LMCgeomN(string);
+  ~LMCgeomN();
+
+  /** Draw geometry */
+  void Draw();
+  void Raytrace();
+
+  /** PrintOut */
+  void Dump();
+
+  /** Get geo manager */
+  TGeoManager* GetGeoManager();
+  LMCmaterials* GetLMCmaterials() {return materials;}
+
+ private:
+  TGeoManager                       *geom;      ///< ROOT geometry manager 
+  TGeoElementTable                  *table;     ///< elements
+  TGeoVolume                        *topVolume; ///< mother volume
+  LMCmaterials                      *materials; ///materials
+  map<string,TGeoVolume*>            mdet;      ///map of detector elements integrating the geometry
+  map<string,TGeoVolume*>::iterator  itmdet;    ///< map iterator
+  
+};
+
+#endif
